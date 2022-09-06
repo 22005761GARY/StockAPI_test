@@ -69,7 +69,7 @@ public class HcmioService {
                 newTcnud.setBranchNo(request.getBranchNo());
                 newTcnud.setCustSeq(request.getCustSeq());
 //                newTcnud.setDocSeq(request.getDocSeq());
-                newTcnud.setDocSeq(hcmioRepository.findLastDocSeq());
+                newTcnud.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
                 newTcnud.setStock(request.getStock());
                 newTcnud.setPrice(request.getPrice());
                 newTcnud.setQty(request.getQty());
@@ -88,8 +88,9 @@ public class HcmioService {
                 if("B".equals(request.getBsType())){
                     Tcnud updateTcnud = tcnudRepository.getDataByStock(request.getStock());
                     updateTcnud = tcnudRepository.updateDataByStock(
-                            (updateTcnud.getQty() * updateTcnud.getPrice() + hcmio.getAmt(request.getQty(), request.getPrice()))
-                                    / (updateTcnud.getQty() + request.getQty()),
+                            hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())),
+                            Math.round((updateTcnud.getQty() * updateTcnud.getPrice() + hcmio.getAmt(request.getQty(), request.getPrice()))
+                                    / (updateTcnud.getQty() + request.getQty())),
                             request.getQty(),
                             updateTcnud.getRemainQty() + request.getQty(),
                             updateTcnud.getFee() + hcmio.getFee(hcmio.getAmt()),
@@ -105,8 +106,9 @@ public class HcmioService {
                 else if("S".equals(request.getBsType())){
                     Tcnud updateTcnud = tcnudRepository.getDataByStock(request.getStock());
                     updateTcnud = tcnudRepository.updateDataByStock(
-                            (updateTcnud.getQty() * updateTcnud.getPrice() + hcmio.getAmt(request.getQty(), request.getPrice()))
-                                    / (updateTcnud.getQty() + request.getQty()),
+                            hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())),
+                            Math.round((updateTcnud.getQty() * updateTcnud.getPrice() + hcmio.getAmt(request.getQty(), request.getPrice()))
+                                    / (updateTcnud.getQty() + request.getQty())),
                             request.getQty(),
                             updateTcnud.getRemainQty() - updateTcnud.getQty(),
                             request.getFee() + updateTcnud.getFee(),
@@ -123,33 +125,31 @@ public class HcmioService {
 
     public String generateDocSeq() {
 
+        DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
         String newDocSeq;
 
-        if (null != hcmioRepository.findLastDocSeq()) {
+        if (null != hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now()))) {
 
-            String eng = hcmioRepository.findLastDocSeq().substring(0, 2);
-            int num = Integer.parseInt(hcmioRepository.findLastDocSeq().substring(2));
-            List<Integer> engAscii = eng.chars().boxed().collect(Collectors.toList());
+            String eng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(0, 2);
+            int num = Integer.parseInt(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(2));
+            int firstEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(1);
+            int secondEng =hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(0);
 
             num++;
             if (num > 999) {
                 num = 0;
-                engAscii.set(1, engAscii.get(1) + 1);
-
-                if (engAscii.get(1) > 90) {
-                    engAscii.set(1, 65);
-                    engAscii.set(0, engAscii.get(0) + 1);
-
-                    if (engAscii.get(0) > 90) {
+                firstEng += 1;
+                if (firstEng > 90) {
+                    firstEng = 65;
+                    secondEng += 1;
+                    if (secondEng > 90) {
                         return "Out of bounds ! Please increase your range !!";
                     }
                 }
             }
 
             String genEng = "";
-            for (int i : engAscii) {
-                genEng += Character.toString(i);
-            }
+            genEng += String.valueOf((char)secondEng) + String.valueOf((char)firstEng);
 
             String genNum = Integer.toString(num);
             if (num < 10) {

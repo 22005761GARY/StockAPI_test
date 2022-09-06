@@ -17,6 +17,6 @@ public interface TcnudRepository extends JpaRepository<Tcnud, CompositePK> {
     Tcnud getDataByDocSeq(String DocSeq);
     @Query(value = "SELECT * FROM tcnud WHERE Stock = ?1", nativeQuery = true)
     Tcnud getDataByStock(String Stock);
-    @Query(value = "Update Tcnud SET Price=?1, Qty=?2, RemainQty=?3, Fee=?4, Cost=?5, ModDate=?6, ModTime=?7, ModUser=?8 WHERE Stock = ?9", nativeQuery = true)
-    Tcnud updateDataByStock(double Price, double Qty, double RemainQty, double Fee, double Cost, String ModDate, String ModTime, String ModUser, String Stock);
+    @Query(value = "Update Tcnud SET DocSeq=?1, Price=?2, Qty=?3, RemainQty=?4, Fee=?5, Cost=?6, ModDate=?7, ModTime=?8, ModUser=?9 WHERE Stock = ?10", nativeQuery = true)
+    Tcnud updateDataByStock(String DocSeq, double Price, double Qty, double RemainQty, double Fee, double Cost, String ModDate, String ModTime, String ModUser, String Stock);
 }

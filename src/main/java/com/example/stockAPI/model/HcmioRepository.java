@@ -11,7 +11,7 @@ public interface HcmioRepository extends JpaRepository<Hcmio, CompositePK> {
 
     @Query(value = "SELECT * FROM hcmio WHERE DocSeq = ?1", nativeQuery = true)
     Hcmio findAllDetailByDocSeq(String DocSeq);
-    @Query(value = "SELECT DocSeq FROM hcmio ORDER BY DocSeq DESC Limit 1", nativeQuery = true)
-    String findLastDocSeq();
+    @Query(value = "SELECT DocSeq FROM hcmio WHERE TradeDate=?1 ORDER BY DocSeq DESC Limit 1", nativeQuery = true)
+    String findLastDocSeqByTradeDate(String TradeDate);
 
 }
