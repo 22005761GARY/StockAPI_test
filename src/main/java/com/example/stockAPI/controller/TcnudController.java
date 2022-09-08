@@ -1,15 +1,15 @@
 package com.example.stockAPI.controller;
 
-import com.example.stockAPI.model.entity.Hcmio;
+import com.example.stockAPI.controller.dto.request.unrealProfitRequest;
+import com.example.stockAPI.controller.dto.response.SumUnrealProfitResponse;
+import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
+import com.example.stockAPI.model.entity.SumUnrealProfit;
 import com.example.stockAPI.model.entity.Tcnud;
-import com.example.stockAPI.service.HcmioService;
 import com.example.stockAPI.service.TcnudService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -28,6 +28,18 @@ public class TcnudController {
     public Tcnud findAllDetailBySeq(@PathVariable String DocSeq){
         Tcnud result = this.tcnudService.getDataByDocSeq(DocSeq);
         return result;
+    }
+    @PostMapping("/unreal/detail")
+    public UnrealProfitResponse findUnrealProfitByStock(@RequestBody unrealProfitRequest request){
+        UnrealProfitResponse result = this.tcnudService.getUnrealProfit(request);
+        return result;
+    }
+
+    @PostMapping("/unreal/sum")
+    public SumUnrealProfitResponse findSumUnrealProfitByStock(@RequestBody unrealProfitRequest request){
+        SumUnrealProfitResponse result = this.tcnudService.getSumUnrealProfit(request);
+        return result;
+
     }
 
 }

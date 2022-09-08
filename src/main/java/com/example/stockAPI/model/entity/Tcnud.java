@@ -40,4 +40,7 @@ public class Tcnud{
     @Column
     private String ModUser;
 
+//    private double marketValue;
+//    private double unrealProfit;
+
 }

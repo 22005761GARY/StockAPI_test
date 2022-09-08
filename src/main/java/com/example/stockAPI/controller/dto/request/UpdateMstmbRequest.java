@@ -1,17 +1,14 @@
-package com.example.stockAPI.controller.dto.response;
+package com.example.stockAPI.controller.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class StatusResponse {
-    private String status;
-
+public class UpdateMstmbRequest {
+    private double CurPrice;
 }

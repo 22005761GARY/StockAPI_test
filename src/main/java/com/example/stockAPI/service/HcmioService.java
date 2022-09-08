@@ -130,7 +130,6 @@ public class HcmioService {
 
         if (null != hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now()))) {
 
-            String eng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(0, 2);
             int num = Integer.parseInt(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(2));
             int firstEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(1);
             int secondEng =hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(0);

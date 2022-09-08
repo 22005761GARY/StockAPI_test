@@ -1,13 +1,16 @@
 package com.example.stockAPI.controller;
 
 import com.example.stockAPI.controller.dto.request.CreateHcmioRequest;
+import com.example.stockAPI.controller.dto.request.unrealProfitRequest;
 import com.example.stockAPI.controller.dto.response.StatusResponse;
 import com.example.stockAPI.model.entity.Hcmio;
+import com.example.stockAPI.model.entity.Tcnud;
 import com.example.stockAPI.service.HcmioService;
 import com.example.stockAPI.service.TcnudService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -34,4 +37,5 @@ public class HcmioController {
         String response = this.hcmioService.createData(request);
         return new StatusResponse(response);
     }
+
 }
