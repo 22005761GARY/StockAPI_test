@@ -30,9 +30,6 @@ public interface TcnudRepository extends JpaRepository<Tcnud, CompositePK> {
     @Query(value = "Select DISTINCT Stock From tcnud WHERE BranchNo = ?1 AND CustSeq = ?2", nativeQuery = true)
     List<String> getDataDistinctByStock(String BranchNo, String CustSeq);
 
-    @Query(value = "Select DISTINCT Stock From tcnud WHERE Stock = ?1 AND BranchNo = ?2 AND CustSeq = ?3", nativeQuery = true)
-    List<String> getStockByBranchNoAndCustSeq(String Stock, String BranchNo, String CustSeq);
-
     @Query(value = "SELECT SUM(Cost) From tcnud WHERE TradeDate = ?1 AND BranchNo = ?2 AND CustSeq = ?3", nativeQuery = true)
     Double findSumCostByTradeDateAndBranchNoAndCustSeq(String TradeDate, String BranchNo, String CustSeq);
 }

@@ -59,108 +59,103 @@ public class TcnudService {
 
     public UnrealProfitResponse getUnrealProfit(UnrealProfitRequest request) {
 
-        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
+//        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
 
+        if (!isBlank(request.getStock()) && 4 != request.getStock().length()) {
+            return new UnrealProfitResponse(null, "001", "無效的股票編號(長度應為4)");
+        }
         //check
-        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq()) ) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤");
+        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤");
         } else if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
-            unrealProfitResponse.setResponseCode("001");
-            unrealProfitResponse.setMessage("查無符合資料");
-        } else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2 || request.getStock().length() != 4) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2, Stock為4(可不填)");
+            return new UnrealProfitResponse(null, "001", "查無符合資料");
+        } else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
         } else {
-            List<UnrealProfit> result = getAllUnrealProfitList(request.getStock(), request.getBranchNo(), request.getCustSeq());
+            List<String> checkedUnrealProfitList;
+            if (isBlank(request.getStock())) {
+                checkedUnrealProfitList = tcnudRepository.getDataDistinctByStock(request.getBranchNo(), request.getCustSeq());
+            } else {
+                checkedUnrealProfitList = new ArrayList<>();
+                checkedUnrealProfitList.add(request.getStock());
+            }
             List<UnrealProfit> check = new ArrayList<>();//將符合獲利區間的UnrealProfit放入check
-            for (UnrealProfit unrealProfit : result) {//檢查獲利率
-                double n = unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100;
-                if (request.getMin() != null && request.getMax() != null) {
-                    if (n >= request.getMin() && n <= request.getMax()) {
+
+            for (String stock : checkedUnrealProfitList) {
+                List<UnrealProfit> result = getAllUnrealProfitList(stock, request.getBranchNo(), request.getCustSeq());
+                for (UnrealProfit unrealProfit : result) {//檢查獲利率
+                    double n = unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100;
+                    if (request.getMin() != null && request.getMax() != null) {
+                        if (n >= request.getMin() && n <= request.getMax()) {
+                            unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
+                            check.add(unrealProfit);
+                        }
+                    } else if (null == request.getMax() && request.getMin() != null) {
+                        if (n >= request.getMin()) {
+                            unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
+                            check.add(unrealProfit);
+                        }
+                    } else if (null == request.getMin() && request.getMax() != null) {
+                        if (n <= request.getMax()) {
+                            unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
+                            check.add(unrealProfit);
+                        }
+                    } else if (null == request.getMin() && null == request.getMax()) {
                         unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
                         check.add(unrealProfit);
                     }
-                } else if (null == request.getMax() && request.getMin() != null) {
-                    if (n >= request.getMin()) {
-                        unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
-                        check.add(unrealProfit);
-                    }
-                } else if (null == request.getMin() && request.getMax() != null) {
-                    if (n <= request.getMax()) {
-                        unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
-                        check.add(unrealProfit);
-                    }
-                } else if (null == request.getMin() && null == request.getMax()) {
-                    unrealProfit.setGainInterest(String.format("%.2f", unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100) + "%");
-                    check.add(unrealProfit);
                 }
             }
 
-            if(check.isEmpty()){
-                return new UnrealProfitResponse(null,"002", "查無符合資料");
+            if (check.isEmpty()) {
+                return new UnrealProfitResponse(null, "002", "查無符合獲利區間的資料");
             }
 
-            unrealProfitResponse.setResultList(check);
-            unrealProfitResponse.setResponseCode("000");
-            unrealProfitResponse.setMessage("Success");
+            return new UnrealProfitResponse(check, "000", "Success!");
         }
-        return unrealProfitResponse;
     }
 
     public SumUnrealProfitResponse getSumUnrealProfit(UnrealProfitRequest request) {
 
-        SumUnrealProfitResponse unrealProfitResponse = new SumUnrealProfitResponse();
+//        SumUnrealProfitResponse sumUnrealProfitResponse = new SumUnrealProfitResponse();
         List<SumUnrealProfit> result = new ArrayList<>();
 
-        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤");
-        } else if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
-            unrealProfitResponse.setResponseCode("001");
-            unrealProfitResponse.setMessage("查無符合資料");
-        }else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2 || request.getStock().length() != 4) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2, Stock為4(可不填)");
+        if (!isBlank(request.getStock()) && 4 != request.getStock().length()) {
+            return new SumUnrealProfitResponse(null, "002", "無效的股票編號(長度應為4)");
         }
-
-        else {
+        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
+            return new SumUnrealProfitResponse(null, "002", "參數檢核錯誤");
+        }
+        if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
+            return new SumUnrealProfitResponse(null, "002", "參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
+        }
+        if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
+            return new SumUnrealProfitResponse(null, "001", "查無符合資料");
+        } else {
             List<String> checkedUnrealProfitList;//檢查有沒有重複的Stock, 要加重複的UnrealProfit放入同一個SumUnrealProfit
 
-            if(isBlank(request.getStock())){
+            if (isBlank(request.getStock())) {
                 checkedUnrealProfitList = tcnudRepository.getDataDistinctByStock(request.getBranchNo(), request.getCustSeq());
-            }
-            else {
+            } else {
                 checkedUnrealProfitList = new ArrayList<>();
                 checkedUnrealProfitList.add(request.getStock());
             }
 
-            List<UnrealProfit> unrealProfitList = getAllUnrealProfitList(request.getStock(), request.getBranchNo(), request.getCustSeq());
             for (String Stock : checkedUnrealProfitList) {
                 SumUnrealProfit sumUnrealProfit = new SumUnrealProfit();
-                List<UnrealProfit> sameStock = new ArrayList<>();//同種Stock放入同一個SumUnrealProfit 物件
-                double sumRemainQty = 0;
-                double sumFee = 0;
-                double sumCost = 0;
-                double sumMarketValue = 0;
+                List<UnrealProfit> unrealProfitList = getAllUnrealProfitList(Stock, request.getBranchNo(), request.getCustSeq());
 
                 for (UnrealProfit unrealProfit : unrealProfitList) {
-                    if (Stock.equals(unrealProfit.getStock())) {
-                        sameStock.add(unrealProfit);
-                        sumRemainQty += unrealProfit.getRemainQty();
-                        sumFee += unrealProfit.getFee();
-                        sumCost += unrealProfit.getCost();
-                        sumMarketValue += unrealProfit.getRemainQty() * mstmbRepository.findCurPriceByStock(unrealProfit.getStock());
-                    }
+//                    sumUnrealProfit.setSumRemainQty((null == sumUnrealProfit.getSumRemainQty()) ? unrealProfit.getRemainQty() : sumUnrealProfit.getSumRemainQty() + unrealProfit.getRemainQty());
+                    sumUnrealProfit.setSumRemainQty(sumUnrealProfit.getSumRemainQty() + unrealProfit.getRemainQty());
+                    sumUnrealProfit.setSumFee(sumUnrealProfit.getSumFee() + unrealProfit.getFee());
+                    sumUnrealProfit.setSumCost(sumUnrealProfit.getSumCost() + unrealProfit.getCost());
+                    sumUnrealProfit.setSumMarketValue(sumUnrealProfit.getSumMarketValue() + unrealProfit.getMarketValue());
                 }
 
-                sumUnrealProfit.setSumGainInterest(String.format("%.2f", (sumMarketValue - sumCost) / sumCost * 100) + "%");
-                sumUnrealProfit.setSumRemainQty(sumRemainQty);
-                sumUnrealProfit.setSumFee(sumFee);
-                sumUnrealProfit.setSumCost(sumCost);
-                sumUnrealProfit.setSumMarketValue(sumMarketValue);
-                sumUnrealProfit.setSumUnrealProfit(sumMarketValue - sumCost);
-                sumUnrealProfit.setUnrealProfitList(sameStock);
+                sumUnrealProfit.setUnrealProfitList(unrealProfitList);
+                sumUnrealProfit.setSumGainInterest(String.format("%.2f", (sumUnrealProfit.getSumMarketValue() - sumUnrealProfit.getSumCost()) / sumUnrealProfit.getSumCost() * 100) + "%");
+                sumUnrealProfit.setSumUnrealProfit(sumUnrealProfit.getSumMarketValue() - sumUnrealProfit.getSumCost());
                 result.add(sumUnrealProfit);
             }
 
@@ -184,36 +179,31 @@ public class TcnudService {
                 }
             }
 
-            if(check.isEmpty()){
-                return new SumUnrealProfitResponse(null,"002", "查無符合資料");
+            if (check.isEmpty()) {
+                return new SumUnrealProfitResponse(null, "002", "查無符合獲利區間的資料");
             }
-            unrealProfitResponse.setSumUnrealProfitList(check);
-            unrealProfitResponse.setResponseCode("000");
-            unrealProfitResponse.setMessage("Success");
+
+            return new SumUnrealProfitResponse(check, "000", "Success!");
         }
-        return unrealProfitResponse;
     }
 
-    public StatusResponse searchCost(SumCostRequest request){
+    public StatusResponse searchCost(SumCostRequest request) {
 
         StatusResponse statusResponse = new StatusResponse();
         DateFormat df = new SimpleDateFormat("yyyyMMdd");
-        Calendar today = Calendar.getInstance();//初始一個Calendar取得現在的時間(物件)
-        Calendar goal = Calendar.getInstance();
-        goal.add(Calendar.DAY_OF_WEEK, -2);//交割金設定為今日日期的2天前
-        while (0 != today.compareTo(goal)){//將範圍設在today一天一天往後追直到追到goal(目標日期)為止
-            today.add(Calendar.DAY_OF_WEEK, -1);
-            if(holidayRepository.findDate(df.format(today.getTime())) != null || 7 == today.get(Calendar.DAY_OF_WEEK) || 1 == today.get(Calendar.DAY_OF_WEEK)){
-                //中間today若是遇到周末或是國定假日則目標日期則會往後延一天(因為交割公作天為2天, 且交割日不會在假日)
-                goal.add(Calendar.DAY_OF_WEEK, -1);
+        Calendar goal = Calendar.getInstance();//初始一個Calendar取得現在的時間(物件)
+        int workDay = 0;
+        while (workDay < 2) {
+            goal.add(Calendar.DAY_OF_WEEK, -1);
+            if (holidayRepository.findDate(df.format(goal.getTime())) == null && 7 != goal.get(Calendar.DAY_OF_WEEK) && 1 != goal.get(Calendar.DAY_OF_WEEK)) {
+                workDay += 1;
             }
         }
         Double cost = tcnudRepository.findSumCostByTradeDateAndBranchNoAndCustSeq(df.format(goal.getTime()), request.getBranchNo(), request.getCustSeq());
 
-        if(null == cost){
+        if (null == cost) {
             statusResponse.setStatus("今日無任何交割金");
-        }
-        else {
+        } else {
             statusResponse.setStatus("今日交割金為: " + cost);
         }
 
@@ -221,16 +211,11 @@ public class TcnudService {
     }
 
     //取得放入要求的UnrealProfit的unrealProfitList
-    public List<UnrealProfit> getAllUnrealProfitList(String Stock, String BranchNo, String CustSeq) {
-        List<Tcnud> tcnudList;
-        if (isBlank(Stock)) {
-            tcnudList = tcnudRepository.getDataByBranchNoAndCustSeq(BranchNo, CustSeq);
-        } else {
-            tcnudList = tcnudRepository.getDataByStockAndBranchAndCustSeq(Stock, BranchNo, CustSeq);
-        }
+    public List<UnrealProfit> getAllUnrealProfitList(String stock, String branchNo, String custSeq) {
+        List<Tcnud> tcnudList = tcnudRepository.getDataByStockAndBranchAndCustSeq(stock, branchNo, custSeq);
         List<UnrealProfit> unrealProfitList = new ArrayList<>();
-        for(Tcnud tcnud : tcnudList){
-            if(null != mstmbRepository.getDataByStock((tcnud.getStock()))){
+        for (Tcnud tcnud : tcnudList) {
+            if (null != mstmbRepository.getDataByStock((tcnud.getStock()))) {
                 UnrealProfit unrealProfit = new UnrealProfit();
                 Mstmb mstmb = mstmbRepository.getDataByStock(tcnud.getStock());
                 unrealProfit.setTradeDate(tcnud.getTradeDate());
@@ -245,10 +230,11 @@ public class TcnudService {
                 unrealProfit.setCost(tcnud.getCost());
                 unrealProfit.setMarketValue(tcnud.getRemainQty() * mstmb.getCurPrice());
                 unrealProfit.setUnrealProfit(tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost());
-                unrealProfit.setGainInterest(String.valueOf(Precision.round((tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
+                unrealProfit.setGainInterest((Precision.round((tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
                 unrealProfitList.add(unrealProfit);
             }
         }
+
         return unrealProfitList;
     }
 }

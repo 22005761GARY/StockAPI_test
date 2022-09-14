@@ -10,6 +10,7 @@ import com.example.stockAPI.model.entity.Hcmio;
 import com.example.stockAPI.model.entity.Holiday;
 import com.example.stockAPI.model.entity.Tcnud;
 import com.example.stockAPI.model.entity.UnrealProfit;
+import org.apache.commons.math3.util.Precision;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,22 +45,19 @@ public class HcmioService {
         return response;
     }
 
-    public Hcmio findAllDetailBySeq(String DocSeq) {
-        Hcmio response = hcmioRepository.findAllDetailByDocSeq(DocSeq);
-        return response;
-    }
+//    public Hcmio findAllDetailBySeq(String DocSeq) {
+//        Hcmio response = hcmioRepository.findAllDetailByDocSeq(DocSeq);
+//        return response;
+//    }
 
     public UnrealProfitResponse createData(CreateHcmioRequest request) {
 
-        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
-
         if (null != hcmioRepository.findDataByPK(request.getTradeDate(), request.getBranchNo(), request.getCustSeq(), request.getDocSeq())) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤, 系統內有具有相同主健的資料");
-        } else if (isBlank(request.getTradeDate()) || isBlank(request.getBranchNo()) || isBlank(request.getCustSeq()) || isBlank(request.getDocSeq()) ||
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 系統內有具有相同主健的資料");
+        }
+        if (isBlank(request.getTradeDate()) || isBlank(request.getBranchNo()) || isBlank(request.getCustSeq()) || isBlank(request.getDocSeq()) ||
                    isBlank(request.getStock()) || null == request.getPrice() || null == request.getQty()) {
-            unrealProfitResponse.setResponseCode("002");
-            unrealProfitResponse.setMessage("參數檢核錯誤, 必要的值是空值");
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 必要的值是空值");
         } else {
 
             DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -125,27 +123,20 @@ public class HcmioService {
             unrealProfit.setRemainQty(request.getQty());
             unrealProfit.setFee(hcmio.getFee(hcmio.getAmt()));
             unrealProfit.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
-            unrealProfit.setMarketValue(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()));
+            unrealProfit.setMarketValue(Precision.round(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()),2));
 
             unrealProfit.setUnrealProfit(
-                    request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
-                            - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+                  Precision.round(  request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
+                          - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())),2));
 
-            unrealProfit.setGainInterest(getGainInterest(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())- Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())),
-                    Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()))));
+            unrealProfit.setGainInterest(String.format("%.2f", (request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
+                    - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())))
+                    / Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()))*100) + "%");
 
             unrealProfitList.add(unrealProfit);
-            unrealProfitResponse.setResultList(unrealProfitList);
-            unrealProfitResponse.setResponseCode("000");
-            unrealProfitResponse.setMessage("Success !!");
+
+            return new UnrealProfitResponse(unrealProfitList, "000", "Success!");
         }
-
-        return unrealProfitResponse;
-    }
-
-    public String getGainInterest(double unrealProfit, double cost){
-        double GainInterest = (unrealProfit/cost)*100;
-        return String.format("%.2f", GainInterest) + "%";
     }
 
 

@@ -24,11 +24,11 @@ public class HcmioController {
         return Data;
     }
 
-    @GetMapping("/{DocSeq}")
-    public Hcmio findAllDetailBySeq(@PathVariable String DocSeq){
-        Hcmio result = this.hcmioService.findAllDetailBySeq(DocSeq);
-        return result;
-    }
+//    @GetMapping("/{DocSeq}")
+//    public Hcmio findAllDetailBySeq(@PathVariable String DocSeq){
+//        Hcmio result = this.hcmioService.findAllDetailBySeq(DocSeq);
+//        return result;
+//    }
 
 //    @PostMapping("/create")
 //    public StatusResponse newData(@RequestBody CreateHcmioRequest request){
