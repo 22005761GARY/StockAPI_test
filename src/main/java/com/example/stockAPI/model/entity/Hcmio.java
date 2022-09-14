@@ -82,4 +82,8 @@ public class Hcmio {
        return 0;
     }
 
+    public String getModUser(){
+        return "Gary";
+    }
+
 }

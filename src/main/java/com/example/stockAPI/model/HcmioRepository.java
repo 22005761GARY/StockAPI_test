@@ -19,5 +19,7 @@ public interface HcmioRepository extends JpaRepository<Hcmio, CompositePK> {
     @Query(value = "SELECT * From hcmio WHERE CustSeq = ?1", nativeQuery = true)
     List<Hcmio> findDataByCustSeq(String CustSeq);
 
+    @Query(value = "SElECT * From hcmio where TradeDate = ?1 AND BranchNo = ?2 AND CustSeq = ?3 AND DocSeq = ?4", nativeQuery = true)
+    Hcmio findDataByPK(String TradeDate, String BranchNo, String CustSeq, String DocSeq);
 
 }

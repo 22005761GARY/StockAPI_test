@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import static org.apache.logging.log4j.util.Strings.isBlank;
+
 @Service
 public class HcmioService {
 
@@ -49,75 +51,104 @@ public class HcmioService {
 
     public UnrealProfitResponse createData(CreateHcmioRequest request) {
 
-        List<Tcnud> tcnudList = tcnudRepository.findAll();
+        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
 
-        DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
-        DateTimeFormatter time = DateTimeFormatter.ofPattern("HHmmss");
+        if (null != hcmioRepository.findDataByPK(request.getTradeDate(), request.getBranchNo(), request.getCustSeq(), request.getDocSeq())) {
+            unrealProfitResponse.setResponseCode("002");
+            unrealProfitResponse.setMessage("參數檢核錯誤, 系統內有具有相同主健的資料");
+        } else if (isBlank(request.getTradeDate()) || isBlank(request.getBranchNo()) || isBlank(request.getCustSeq()) || isBlank(request.getDocSeq()) ||
+                   isBlank(request.getStock()) || null == request.getPrice() || null == request.getQty()) {
+            unrealProfitResponse.setResponseCode("002");
+            unrealProfitResponse.setMessage("參數檢核錯誤, 必要的值是空值");
+        } else {
 
-        Hcmio hcmio = new Hcmio();
-        hcmio.setTradeDate(date.format(LocalDate.now()));
-        hcmio.setBranchNo(request.getBranchNo());
-        hcmio.setCustSeq(request.getCustSeq());
-//            hcmio.setDocSeq(request.getDocSeq());
-        hcmio.setDocSeq(generateDocSeq());
-        hcmio.setStock(request.getStock());
-        hcmio.setBsType(request.getBsType());
-        hcmio.setPrice(request.getPrice());
-        hcmio.setQty(request.getQty());
-        hcmio.setAmt(hcmio.getAmt(request.getQty(), request.getPrice()));
-        hcmio.setFee(hcmio.getFee(hcmio.getAmt()));
-        hcmio.setTax(hcmio.getTax(hcmio.getAmt(), hcmio.getBsType()));
-        hcmio.setStinTax(hcmio.getStinTax());
-        hcmio.setNetAmt(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()));
-        hcmio.setModDate(date.format(LocalDate.now()));
-        hcmio.setModTime(time.format(LocalTime.now()));
-        hcmio.setModUser(request.getModUser());
-        hcmioRepository.save(hcmio);
+            DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
+            DateTimeFormatter time = DateTimeFormatter.ofPattern("HHmmss");
+
+            //////////////hcmio/////////////////
+            Hcmio hcmio = new Hcmio();
+//        hcmio.setTradeDate(date.format(LocalDate.now()));
+            hcmio.setTradeDate(request.getTradeDate());
+            hcmio.setBranchNo(request.getBranchNo());
+            hcmio.setCustSeq(request.getCustSeq());
+            hcmio.setDocSeq(request.getDocSeq());
+//        hcmio.setDocSeq(generateDocSeq());
+            hcmio.setStock(request.getStock());
+            hcmio.setBsType(request.getBsType());
+            hcmio.setPrice(request.getPrice());
+            hcmio.setQty(request.getQty());
+            hcmio.setAmt(hcmio.getAmt(request.getQty(), request.getPrice()));
+            hcmio.setFee(hcmio.getFee(hcmio.getAmt()));
+            hcmio.setTax(hcmio.getTax(hcmio.getAmt(), hcmio.getBsType()));
+            hcmio.setStinTax(hcmio.getStinTax());
+            hcmio.setNetAmt(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()));
+            hcmio.setModDate(date.format(LocalDate.now()));
+            hcmio.setModTime(time.format(LocalTime.now()));
+            hcmio.setModUser(hcmio.getModUser());
+            hcmioRepository.save(hcmio);
 
 //            if(null == tcnudRepository.getDataByStock(request.getStock())){
-        //insert
-        Tcnud newTcnud = new Tcnud();
-        newTcnud.setTradeDate(date.format(LocalDate.now()));
-        newTcnud.setBranchNo(request.getBranchNo());
-        newTcnud.setCustSeq(request.getCustSeq());
-//                newTcnud.setDocSeq(request.getDocSeq());
-        newTcnud.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
-        newTcnud.setStock(request.getStock());
-        newTcnud.setPrice(request.getPrice());
-        newTcnud.setQty(request.getQty());
-        newTcnud.setRemainQty(request.getQty());
-        newTcnud.setFee(hcmio.getFee(hcmio.getAmt()));
-        newTcnud.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
-        newTcnud.setModDate(date.format(LocalDate.now()));
-        newTcnud.setModTime(time.format(LocalTime.now()));
-        newTcnud.setModUser(request.getModUser());
-        tcnudRepository.save(newTcnud);
 
-        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
-        List<UnrealProfit> unrealProfitList = new ArrayList<>();
-        UnrealProfit unrealProfit = new UnrealProfit();
+            ///////////////Tcnud//////////////////
+            Tcnud newTcnud = new Tcnud();
+//        newTcnud.setTradeDate(date.format(LocalDate.now()));取今天的日期
+            newTcnud.setTradeDate(request.getTradeDate());
+            newTcnud.setBranchNo(request.getBranchNo());
+            newTcnud.setCustSeq(request.getCustSeq());
+            newTcnud.setDocSeq(request.getDocSeq());
+//        newTcnud.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
+            newTcnud.setStock(request.getStock());
+            newTcnud.setPrice(request.getPrice());
+            newTcnud.setQty(request.getQty());
+            newTcnud.setRemainQty(request.getQty());
+            newTcnud.setFee(hcmio.getFee(hcmio.getAmt()));
+            newTcnud.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+            newTcnud.setModDate(date.format(LocalDate.now()));
+            newTcnud.setModTime(time.format(LocalTime.now()));
+            newTcnud.setModUser(newTcnud.getModUser());
+            tcnudRepository.save(newTcnud);
 
-        unrealProfit.setTradeDate(date.format(LocalDate.now()));
-        unrealProfit.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
-        unrealProfit.setStock(request.getStock());
-        unrealProfit.setStockName(mstmbRepository.findStockNameByStock(request.getStock()));
-        unrealProfit.setBuyPrice(request.getPrice());
-        unrealProfit.setNowPrice(mstmbRepository.findCurPriceByStock(request.getStock()));
-        unrealProfit.setQty(request.getQty());
-        unrealProfit.setRemainQty(request.getQty());
-        unrealProfit.setFee(hcmio.getFee(hcmio.getAmt()));
-        unrealProfit.setCost(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()));
-        unrealProfit.setMarketValue(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()));
-        //
-        unrealProfit.setUnrealProfit(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()) +
-                request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()));
-        //
-        unrealProfitList.add(unrealProfit);
-        unrealProfitResponse.setResultList(unrealProfitList);
-        unrealProfitResponse.setResponseCode("000");
-        unrealProfitResponse.setMessage("Success !!");
+            /////////UnrealProfit////////////
+//        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
+            List<UnrealProfit> unrealProfitList = new ArrayList<>();
+            UnrealProfit unrealProfit = new UnrealProfit();
+
+//        unrealProfit.setTradeDate(date.format(LocalDate.now()));取今天的日期
+            unrealProfit.setTradeDate(request.getTradeDate());
+//        unrealProfit.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
+            unrealProfit.setDocSeq(request.getDocSeq());
+            unrealProfit.setStock(request.getStock());
+            unrealProfit.setStockName(mstmbRepository.findStockNameByStock(request.getStock()));
+            unrealProfit.setBuyPrice(request.getPrice());
+            unrealProfit.setNowPrice(mstmbRepository.findCurPriceByStock(request.getStock()));
+            unrealProfit.setQty(request.getQty());
+            unrealProfit.setRemainQty(request.getQty());
+            unrealProfit.setFee(hcmio.getFee(hcmio.getAmt()));
+            unrealProfit.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+            unrealProfit.setMarketValue(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()));
+
+            unrealProfit.setUnrealProfit(
+                    request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
+                            - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+
+            unrealProfit.setGainInterest(getGainInterest(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())- Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())),
+                    Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()))));
+
+            unrealProfitList.add(unrealProfit);
+            unrealProfitResponse.setResultList(unrealProfitList);
+            unrealProfitResponse.setResponseCode("000");
+            unrealProfitResponse.setMessage("Success !!");
+        }
 
         return unrealProfitResponse;
+    }
+
+    public String getGainInterest(double unrealProfit, double cost){
+        double GainInterest = (unrealProfit/cost)*100;
+        return String.format("%.2f", GainInterest) + "%";
+    }
+
+
 //            }
 
 //            else{
@@ -158,7 +189,7 @@ public class HcmioService {
 //                }
 //            }
 //        return "Create Complete!";
-    }
+//}
 
     //    public String searchCost(String BranchNo, String CustSeq){
 //        DateFormat df = new SimpleDateFormat("yyyyMMdd");
@@ -177,45 +208,45 @@ public class HcmioService {
 //
 //        return "Cost " + cost;
 //    }
-    public String generateDocSeq() {
-
-        DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String newDocSeq;
-
-        if (null != hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now()))) {
-
-            int num = Integer.parseInt(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(2));
-            int firstEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(1);
-            int secondEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(0);
-
-            num++;
-            if (num > 999) {
-                num = 0;
-                firstEng += 1;
-                if (firstEng > 90) {
-                    firstEng = 65;
-                    secondEng += 1;
-                    if (secondEng > 90) {
-                        return "Out of bounds ! Please increase your range !!";
-                    }
-                }
-            }
-
-            String genEng = "";
-            genEng += String.valueOf((char) secondEng) + String.valueOf((char) firstEng);
-
-            String genNum = Integer.toString(num);
-            if (num < 10) {
-                newDocSeq = genEng + "00" + genNum;
-            } else if (num < 100) {
-                newDocSeq = genEng + "0" + genNum;
-            } else {
-                newDocSeq = genEng + genNum;
-            }
-        } else {//若明細表裡無任何資料時，預設從AA000開始新增
-            newDocSeq = "AA000";
-        }
-
-        return newDocSeq;
-    }
+//    public String generateDocSeq() {
+//
+//        DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
+//        String newDocSeq;
+//
+//        if (null != hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now()))) {
+//
+//            int num = Integer.parseInt(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).substring(2));
+//            int firstEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(1);
+//            int secondEng = hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())).charAt(0);
+//
+//            num++;
+//            if (num > 999) {
+//                num = 0;
+//                firstEng += 1;
+//                if (firstEng > 90) {
+//                    firstEng = 65;
+//                    secondEng += 1;
+//                    if (secondEng > 90) {
+//                        return "Out of bounds ! Please increase your range !!";
+//                    }
+//                }
+//            }
+//
+//            String genEng = "";
+//            genEng += String.valueOf((char) secondEng) + String.valueOf((char) firstEng);
+//
+//            String genNum = Integer.toString(num);
+//            if (num < 10) {
+//                newDocSeq = genEng + "00" + genNum;
+//            } else if (num < 100) {
+//                newDocSeq = genEng + "0" + genNum;
+//            } else {
+//                newDocSeq = genEng + genNum;
+//            }
+//        } else {//若明細表裡無任何資料時，預設從AA000開始新增
+//            newDocSeq = "AA000";
+//        }
+//
+//        return newDocSeq;
+//    }
 }

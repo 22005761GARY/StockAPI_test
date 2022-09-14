@@ -2,7 +2,7 @@ package com.example.stockAPI.controller;
 
 import com.example.stockAPI.controller.dto.request.SumCostRequest;
 import com.example.stockAPI.controller.dto.request.UnrealProfitRequest;
-import com.example.stockAPI.controller.dto.response.SumCostResponse;
+import com.example.stockAPI.controller.dto.response.StatusResponse;
 import com.example.stockAPI.controller.dto.response.SumUnrealProfitResponse;
 import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
 import com.example.stockAPI.model.entity.Tcnud;
@@ -42,8 +42,8 @@ public class TcnudController {
     }
 
     @PostMapping("/sumcost")
-    public SumCostResponse findSumCost(@RequestBody SumCostRequest request){
-        SumCostResponse result = this.tcnudService.searchCost(request);
+    public StatusResponse findSumCost(@RequestBody SumCostRequest request){
+        StatusResponse result = this.tcnudService.searchCost(request);
         return result;
     }
 

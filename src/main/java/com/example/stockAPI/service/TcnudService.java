@@ -2,7 +2,7 @@ package com.example.stockAPI.service;
 
 import com.example.stockAPI.controller.dto.request.SumCostRequest;
 import com.example.stockAPI.controller.dto.request.UnrealProfitRequest;
-import com.example.stockAPI.controller.dto.response.SumCostResponse;
+import com.example.stockAPI.controller.dto.response.StatusResponse;
 import com.example.stockAPI.controller.dto.response.SumUnrealProfitResponse;
 import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
 import com.example.stockAPI.model.HolidayRepository;
@@ -68,9 +68,12 @@ public class TcnudService {
         } else if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
             unrealProfitResponse.setResponseCode("001");
             unrealProfitResponse.setMessage("查無符合資料");
+        } else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2 || request.getStock().length() != 4) {
+            unrealProfitResponse.setResponseCode("002");
+            unrealProfitResponse.setMessage("參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2, Stock為4(可不填)");
         } else {
             List<UnrealProfit> result = getAllUnrealProfitList(request.getStock(), request.getBranchNo(), request.getCustSeq());
-            List<UnrealProfit> check = new ArrayList<>();//檢查獲利率
+            List<UnrealProfit> check = new ArrayList<>();//將符合獲利區間的UnrealProfit放入check
             for (UnrealProfit unrealProfit : result) {//檢查獲利率
                 double n = unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100;
                 if (request.getMin() != null && request.getMax() != null) {
@@ -93,6 +96,11 @@ public class TcnudService {
                     check.add(unrealProfit);
                 }
             }
+
+            if(check.isEmpty()){
+                return new UnrealProfitResponse(null,"002", "查無符合資料");
+            }
+
             unrealProfitResponse.setResultList(check);
             unrealProfitResponse.setResponseCode("000");
             unrealProfitResponse.setMessage("Success");
@@ -108,16 +116,16 @@ public class TcnudService {
         if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
             unrealProfitResponse.setResponseCode("002");
             unrealProfitResponse.setMessage("參數檢核錯誤");
-
         } else if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
             unrealProfitResponse.setResponseCode("001");
             unrealProfitResponse.setMessage("查無符合資料");
+        }else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2 || request.getStock().length() != 4) {
+            unrealProfitResponse.setResponseCode("002");
+            unrealProfitResponse.setMessage("參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2, Stock為4(可不填)");
         }
 
         else {
-
-            List<String> checkedUnrealProfitList;//檢查有沒有重複的Stock
-            List<SumUnrealProfit> check = new ArrayList<>();//檢查獲利率
+            List<String> checkedUnrealProfitList;//檢查有沒有重複的Stock, 要加重複的UnrealProfit放入同一個SumUnrealProfit
 
             if(isBlank(request.getStock())){
                 checkedUnrealProfitList = tcnudRepository.getDataDistinctByStock(request.getBranchNo(), request.getCustSeq());
@@ -156,6 +164,7 @@ public class TcnudService {
                 result.add(sumUnrealProfit);
             }
 
+            List<SumUnrealProfit> check = new ArrayList<>();////將符合獲利區間的UnrealProfit放入check
             for (SumUnrealProfit sumUnrealProfit : result) {//檢查獲利率
                 double n = sumUnrealProfit.getSumUnrealProfit() / sumUnrealProfit.getSumCost() * 100;
                 if (request.getMin() != null && request.getMax() != null) {
@@ -176,7 +185,7 @@ public class TcnudService {
             }
 
             if(check.isEmpty()){
-                return new SumUnrealProfitResponse(null,"002", "NO");
+                return new SumUnrealProfitResponse(null,"002", "查無符合資料");
             }
             unrealProfitResponse.setSumUnrealProfitList(check);
             unrealProfitResponse.setResponseCode("000");
@@ -185,54 +194,59 @@ public class TcnudService {
         return unrealProfitResponse;
     }
 
-    public SumCostResponse searchCost(SumCostRequest request){
-        SumCostResponse sumCostResponse = new SumCostResponse();
+    public StatusResponse searchCost(SumCostRequest request){
+
+        StatusResponse statusResponse = new StatusResponse();
         DateFormat df = new SimpleDateFormat("yyyyMMdd");
-        Calendar today = Calendar.getInstance();
+        Calendar today = Calendar.getInstance();//初始一個Calendar取得現在的時間(物件)
         Calendar goal = Calendar.getInstance();
-        goal.add(Calendar.DAY_OF_WEEK, -2);
-        while (0 != today.compareTo(goal)){
+        goal.add(Calendar.DAY_OF_WEEK, -2);//交割金設定為今日日期的2天前
+        while (0 != today.compareTo(goal)){//將範圍設在today一天一天往後追直到追到goal(目標日期)為止
             today.add(Calendar.DAY_OF_WEEK, -1);
             if(holidayRepository.findDate(df.format(today.getTime())) != null || 7 == today.get(Calendar.DAY_OF_WEEK) || 1 == today.get(Calendar.DAY_OF_WEEK)){
+                //中間today若是遇到周末或是國定假日則目標日期則會往後延一天(因為交割公作天為2天, 且交割日不會在假日)
                 goal.add(Calendar.DAY_OF_WEEK, -1);
             }
         }
         Double cost = tcnudRepository.findSumCostByTradeDateAndBranchNoAndCustSeq(df.format(goal.getTime()), request.getBranchNo(), request.getCustSeq());
-        sumCostResponse.setSumCost(cost);
-        return sumCostResponse;
+
+        if(null == cost){
+            statusResponse.setStatus("今日無任何交割金");
+        }
+        else {
+            statusResponse.setStatus("今日交割金為: " + cost);
+        }
+
+        return statusResponse;
     }
 
-    //重構程式碼(取得放入要求的UnrealProfit的unrealProfitList)
-
+    //取得放入要求的UnrealProfit的unrealProfitList
     public List<UnrealProfit> getAllUnrealProfitList(String Stock, String BranchNo, String CustSeq) {
         List<Tcnud> tcnudList;
-        if (null == Stock) {
+        if (isBlank(Stock)) {
             tcnudList = tcnudRepository.getDataByBranchNoAndCustSeq(BranchNo, CustSeq);
         } else {
             tcnudList = tcnudRepository.getDataByStockAndBranchAndCustSeq(Stock, BranchNo, CustSeq);
         }
         List<UnrealProfit> unrealProfitList = new ArrayList<>();
-
-        List<Mstmb> mstmbList = mstmbRepository.findAll();
-        for (Mstmb mstmb : mstmbList) {
-            for (Tcnud tcnud : tcnudList) {
-                if (mstmb.getStock().equals(tcnud.getStock())) {
-                    UnrealProfit unrealProfit = new UnrealProfit();
-                    unrealProfit.setTradeDate(tcnud.getTradeDate());
-                    unrealProfit.setDocSeq(tcnud.getDocSeq());
-                    unrealProfit.setStock(tcnud.getStock());
-                    unrealProfit.setStockName(mstmb.getStockName());
-                    unrealProfit.setBuyPrice(tcnud.getPrice());
-                    unrealProfit.setNowPrice(mstmb.getCurPrice());
-                    unrealProfit.setQty(tcnud.getQty());
-                    unrealProfit.setRemainQty(tcnud.getRemainQty());
-                    unrealProfit.setFee(tcnud.getFee());
-                    unrealProfit.setCost(tcnud.getCost());
-                    unrealProfit.setMarketValue(tcnud.getRemainQty() * mstmb.getCurPrice());
-                    unrealProfit.setUnrealProfit(tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost());
-                    unrealProfit.setGainInterest(String.valueOf(Precision.round((tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
-                    unrealProfitList.add(unrealProfit);
-                }
+        for(Tcnud tcnud : tcnudList){
+            if(null != mstmbRepository.getDataByStock((tcnud.getStock()))){
+                UnrealProfit unrealProfit = new UnrealProfit();
+                Mstmb mstmb = mstmbRepository.getDataByStock(tcnud.getStock());
+                unrealProfit.setTradeDate(tcnud.getTradeDate());
+                unrealProfit.setDocSeq(tcnud.getDocSeq());
+                unrealProfit.setStock(tcnud.getStock());
+                unrealProfit.setStockName(mstmb.getStockName());
+                unrealProfit.setBuyPrice(tcnud.getPrice());
+                unrealProfit.setNowPrice(mstmb.getCurPrice());
+                unrealProfit.setQty(tcnud.getQty());
+                unrealProfit.setRemainQty(tcnud.getRemainQty());
+                unrealProfit.setFee(tcnud.getFee());
+                unrealProfit.setCost(tcnud.getCost());
+                unrealProfit.setMarketValue(tcnud.getRemainQty() * mstmb.getCurPrice());
+                unrealProfit.setUnrealProfit(tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost());
+                unrealProfit.setGainInterest(String.valueOf(Precision.round((tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
+                unrealProfitList.add(unrealProfit);
             }
         }
         return unrealProfitList;
