@@ -9,6 +9,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateMstmbRequest {
-    private double CurPrice;
+public class MstmbRequest {
+    private String Stock;
 }

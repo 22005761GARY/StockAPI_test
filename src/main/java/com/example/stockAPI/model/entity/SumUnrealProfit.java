@@ -17,5 +17,6 @@ public class SumUnrealProfit {
     private double sumCost;
     private double sumMarketValue;
     private double sumUnrealProfit;
-    private List<UnrealProfit> tcnudList;
+    private String sumGainInterest;
+    private List<UnrealProfit> unrealProfitList;
 }

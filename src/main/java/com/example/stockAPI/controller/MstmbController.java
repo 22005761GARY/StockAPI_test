@@ -1,7 +1,6 @@
 package com.example.stockAPI.controller;
-
-import com.example.stockAPI.controller.dto.request.UpdateMstmbRequest;
-import com.example.stockAPI.controller.dto.response.StatusResponse;
+import com.example.stockAPI.controller.dto.request.MstmbRequest;
+import com.example.stockAPI.controller.dto.response.StockInfoResponse;
 import com.example.stockAPI.model.entity.Mstmb;
 import com.example.stockAPI.service.MstmbService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +21,14 @@ public class MstmbController {
         return Data;
     }
 
-//    @PutMapping("/{Stock}")
-//    public StatusResponse updateCurPrice(@PathVariable String Stock, @RequestBody UpdateMstmbRequest request){
-//        String response = this.mstmbService.updateCurPriceByStock(Stock, request);
-//        return new StatusResponse(response);
-//    }
+    @PostMapping("/stockInfo")
+    public StockInfoResponse getStockInfo(@RequestBody MstmbRequest request){
+        StockInfoResponse result = this.mstmbService.getStockInfo(request);
+        return result;
+    }
+    @PostMapping("/updateCurPrice")
+    public StockInfoResponse updateCurPrice(@RequestBody MstmbRequest request){
+        StockInfoResponse result = this.mstmbService.updateCurPrice(request);
+        return result;
+    }
 }

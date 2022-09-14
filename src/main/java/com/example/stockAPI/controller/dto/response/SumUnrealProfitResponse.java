@@ -6,12 +6,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class SumUnrealProfitResponse {
-    private SumUnrealProfit sumUnrealProfit;
+    private List<SumUnrealProfit> sumUnrealProfitList;
     private String responseCode;
     private String message;
 }

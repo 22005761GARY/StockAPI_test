@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class unrealProfitRequest {
+public class SumCostRequest {
     private String BranchNo;
     private String CustSeq;
-    private String Stock;
 }

@@ -13,7 +13,6 @@ import javax.persistence.Id;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateHcmioRequest {
-
     private String TradeDate;
     private String BranchNo;
     private String CustSeq;

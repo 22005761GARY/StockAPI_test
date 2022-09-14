@@ -1,15 +1,15 @@
 package com.example.stockAPI.controller;
 
-import com.example.stockAPI.controller.dto.request.unrealProfitRequest;
+import com.example.stockAPI.controller.dto.request.SumCostRequest;
+import com.example.stockAPI.controller.dto.request.UnrealProfitRequest;
+import com.example.stockAPI.controller.dto.response.SumCostResponse;
 import com.example.stockAPI.controller.dto.response.SumUnrealProfitResponse;
 import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
-import com.example.stockAPI.model.entity.SumUnrealProfit;
 import com.example.stockAPI.model.entity.Tcnud;
 import com.example.stockAPI.service.TcnudService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -30,16 +30,21 @@ public class TcnudController {
         return result;
     }
     @PostMapping("/unreal/detail")
-    public UnrealProfitResponse findUnrealProfitByStock(@RequestBody unrealProfitRequest request){
+    public UnrealProfitResponse findUnrealProfitByStock(@RequestBody UnrealProfitRequest request){
         UnrealProfitResponse result = this.tcnudService.getUnrealProfit(request);
         return result;
     }
 
     @PostMapping("/unreal/sum")
-    public SumUnrealProfitResponse findSumUnrealProfitByStock(@RequestBody unrealProfitRequest request){
+    public SumUnrealProfitResponse findSumUnrealProfitByStock(@RequestBody UnrealProfitRequest request){
         SumUnrealProfitResponse result = this.tcnudService.getSumUnrealProfit(request);
         return result;
+    }
 
+    @PostMapping("/sumcost")
+    public SumCostResponse findSumCost(@RequestBody SumCostRequest request){
+        SumCostResponse result = this.tcnudService.searchCost(request);
+        return result;
     }
 
 }

@@ -14,6 +14,6 @@ public interface MstmbRepository extends JpaRepository<Mstmb, Integer> {
     @Query(value = "Select CurPrice From Mstmb Where Stock = ?1", nativeQuery = true)
     public double findCurPriceByStock(String Stock);
 
-    @Query(value = "Select CurPrice From Mstmb", nativeQuery = true)
-    List<Double> findAllCurPrice();
+    @Query(value = "Select StockName From Mstmb Where Stock = ?1", nativeQuery = true)
+    String findStockNameByStock(String Stock);
 }

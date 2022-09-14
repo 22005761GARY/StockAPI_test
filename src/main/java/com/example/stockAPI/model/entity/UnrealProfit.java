@@ -22,5 +22,6 @@ public class UnrealProfit {
     private double cost;
     private double MarketValue;
     private double unrealProfit;
+    private String gainInterest;
 
 }
