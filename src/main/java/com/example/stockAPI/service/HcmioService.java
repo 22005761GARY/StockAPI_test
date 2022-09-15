@@ -1,6 +1,7 @@
 package com.example.stockAPI.service;
 
 import com.example.stockAPI.controller.dto.request.CreateHcmioRequest;
+import com.example.stockAPI.controller.dto.response.StatusResponse;
 import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
 import com.example.stockAPI.model.HcmioRepository;
 import com.example.stockAPI.model.HolidayRepository;
@@ -58,7 +59,23 @@ public class HcmioService {
         if (isBlank(request.getTradeDate()) || isBlank(request.getBranchNo()) || isBlank(request.getCustSeq()) || isBlank(request.getDocSeq()) ||
                    isBlank(request.getStock()) || null == request.getPrice() || null == request.getQty()) {
             return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 必要的值是空值");
-        } else {
+        }
+        if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
+            return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
+        }
+        if (4 != request.getStock().length()) {
+            return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 股票長度應為4");
+        }
+        if (4 != request.getDocSeq().length()) {
+            return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 委託書號長度應為4");
+        }
+        if(10 > request.getPrice()){
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 價錢不會小於10");
+        }
+        if(1_000_000_000 < request.getQty()){
+            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 一次下單最多9位數");
+        }
+        else {
 
             DateTimeFormatter date = DateTimeFormatter.ofPattern("yyyyMMdd");
             DateTimeFormatter time = DateTimeFormatter.ofPattern("HHmmss");
@@ -72,7 +89,7 @@ public class HcmioService {
             hcmio.setDocSeq(request.getDocSeq());
 //        hcmio.setDocSeq(generateDocSeq());
             hcmio.setStock(request.getStock());
-            hcmio.setBsType(request.getBsType());
+            hcmio.setBsType("B");
             hcmio.setPrice(request.getPrice());
             hcmio.setQty(request.getQty());
             hcmio.setAmt(hcmio.getAmt(request.getQty(), request.getPrice()));

@@ -191,15 +191,22 @@ public class TcnudService {
 
         StatusResponse statusResponse = new StatusResponse();
         DateFormat df = new SimpleDateFormat("yyyyMMdd");
-        Calendar goal = Calendar.getInstance();//初始一個Calendar取得現在的時間(物件)
+        Calendar today = Calendar.getInstance();//初始一個Calendar取得現在的時間(物件)
         int workDay = 0;
-        while (workDay < 2) {
-            goal.add(Calendar.DAY_OF_WEEK, -1);
-            if (holidayRepository.findDate(df.format(goal.getTime())) == null && 7 != goal.get(Calendar.DAY_OF_WEEK) && 1 != goal.get(Calendar.DAY_OF_WEEK)) {
+        while (workDay < 2) {//交割工作預設為兩天, 若是加到兩天, 則跳出迴圈得到目標日期
+            today.add(Calendar.DAY_OF_WEEK, -1);
+            if (holidayRepository.findDate(df.format(today.getTime())) == null && 7 != today.get(Calendar.DAY_OF_WEEK) && 1 != today.get(Calendar.DAY_OF_WEEK)) {
                 workDay += 1;
             }
         }
-        Double cost = tcnudRepository.findSumCostByTradeDateAndBranchNoAndCustSeq(df.format(goal.getTime()), request.getBranchNo(), request.getCustSeq());
+        Double cost = tcnudRepository.findSumCostByTradeDateAndBranchNoAndCustSeq(df.format(today.getTime()), request.getBranchNo(), request.getCustSeq());
+
+        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
+            return new StatusResponse("參數檢核錯誤(空值)");
+        }
+        if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
+            return new StatusResponse("參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
+        }
 
         if (null == cost) {
             statusResponse.setStatus("今日無任何交割金");
@@ -237,4 +244,14 @@ public class TcnudService {
 
         return unrealProfitList;
     }
+
+//    public List<?> checkList(List<?> list){
+//        List<?> check = new ArrayList<>();
+//        for(UnrealProfit unrealProfit : list){
+//
+//
+//        }
+//
+//        return check;
+//    }
 }
