@@ -31,6 +31,8 @@ public class TcnudService {
     private MstmbRepository mstmbRepository;
     @Autowired
     private HolidayRepository holidayRepository;
+    @Autowired
+    private CheckService CheckService;
 
 //    public void getCurPrice(List<Mstmb> mstmbList, List<Tcnud> tcnudList){
 //        for(int i = 0; i < mstmbList.size(); i++){
@@ -59,19 +61,13 @@ public class TcnudService {
 
     public UnrealProfitResponse getUnrealProfit(UnrealProfitRequest request) {
 
-//        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
+        List<Tcnud> tcnudList = tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq());
+        UnrealProfitResponse unrealProfitResponse = CheckService.deBug(request,tcnudList);
 
-        if (!isBlank(request.getStock()) && 4 != request.getStock().length()) {
-            return new UnrealProfitResponse(null, "001", "無效的股票編號(長度應為4)");
+        if(unrealProfitResponse.getResponseCode()!= "000"){
+            return unrealProfitResponse;
         }
-        //check
-        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
-            return new UnrealProfitResponse(null, "002", "參數檢核錯誤");
-        } else if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
-            return new UnrealProfitResponse(null, "001", "查無符合資料");
-        } else if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
-            return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
-        } else {
+        else {
             List<String> checkedUnrealProfitList;
             if (isBlank(request.getStock())) {
                 checkedUnrealProfitList = tcnudRepository.getDataDistinctByStock(request.getBranchNo(), request.getCustSeq());
@@ -80,9 +76,9 @@ public class TcnudService {
                 checkedUnrealProfitList.add(request.getStock());
             }
             List<UnrealProfit> check = new ArrayList<>();//將符合獲利區間的UnrealProfit放入check
-
             for (String stock : checkedUnrealProfitList) {
                 List<UnrealProfit> result = getAllUnrealProfitList(stock, request.getBranchNo(), request.getCustSeq());
+
                 for (UnrealProfit unrealProfit : result) {//檢查獲利率
                     double n = unrealProfit.getUnrealProfit() / unrealProfit.getCost() * 100;
                     if (request.getMin() != null && request.getMax() != null) {
@@ -111,27 +107,21 @@ public class TcnudService {
                 return new UnrealProfitResponse(null, "002", "查無符合獲利區間的資料");
             }
 
-            return new UnrealProfitResponse(check, "000", "Success!");
+            unrealProfitResponse.setResultList(check);
+        return unrealProfitResponse;
         }
     }
 
     public SumUnrealProfitResponse getSumUnrealProfit(UnrealProfitRequest request) {
 
-//        SumUnrealProfitResponse sumUnrealProfitResponse = new SumUnrealProfitResponse();
+        List<Tcnud> tcnudList = tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq());
+        SumUnrealProfitResponse sumUnrealProfitResponse = CheckService.sumDeBug(request, tcnudList);
         List<SumUnrealProfit> result = new ArrayList<>();
 
-        if (!isBlank(request.getStock()) && 4 != request.getStock().length()) {
-            return new SumUnrealProfitResponse(null, "002", "無效的股票編號(長度應為4)");
+        if(sumUnrealProfitResponse.getResponseCode() != "000"){
+            return sumUnrealProfitResponse;
         }
-        if (isBlank(request.getBranchNo()) || isBlank(request.getCustSeq())) {
-            return new SumUnrealProfitResponse(null, "002", "參數檢核錯誤");
-        }
-        if (request.getBranchNo().length() != 4 || request.getCustSeq().length() != 2) {
-            return new SumUnrealProfitResponse(null, "002", "參數檢核錯誤, 值長度不符, BranchNo為4, CustSeq為2");
-        }
-        if (tcnudRepository.getDataByBranchNoAndCustSeq(request.getBranchNo(), request.getCustSeq()).isEmpty()) {
-            return new SumUnrealProfitResponse(null, "001", "查無符合資料");
-        } else {
+        else {
             List<String> checkedUnrealProfitList;//檢查有沒有重複的Stock, 要加重複的UnrealProfit放入同一個SumUnrealProfit
 
             if (isBlank(request.getStock())) {
@@ -146,7 +136,6 @@ public class TcnudService {
                 List<UnrealProfit> unrealProfitList = getAllUnrealProfitList(Stock, request.getBranchNo(), request.getCustSeq());
 
                 for (UnrealProfit unrealProfit : unrealProfitList) {
-//                    sumUnrealProfit.setSumRemainQty((null == sumUnrealProfit.getSumRemainQty()) ? unrealProfit.getRemainQty() : sumUnrealProfit.getSumRemainQty() + unrealProfit.getRemainQty());
                     sumUnrealProfit.setSumRemainQty(sumUnrealProfit.getSumRemainQty() + unrealProfit.getRemainQty());
                     sumUnrealProfit.setSumFee(sumUnrealProfit.getSumFee() + unrealProfit.getFee());
                     sumUnrealProfit.setSumCost(sumUnrealProfit.getSumCost() + unrealProfit.getCost());
@@ -183,7 +172,10 @@ public class TcnudService {
                 return new SumUnrealProfitResponse(null, "002", "查無符合獲利區間的資料");
             }
 
-            return new SumUnrealProfitResponse(check, "000", "Success!");
+            sumUnrealProfitResponse.setSumUnrealProfitList(check);
+            sumUnrealProfitResponse.setResponseCode("000");
+            sumUnrealProfitResponse.setMessage("Success!");
+            return sumUnrealProfitResponse;
         }
     }
 
@@ -245,13 +237,4 @@ public class TcnudService {
         return unrealProfitList;
     }
 
-//    public List<?> checkList(List<?> list){
-//        List<?> check = new ArrayList<>();
-//        for(UnrealProfit unrealProfit : list){
-//
-//
-//        }
-//
-//        return check;
-//    }
 }

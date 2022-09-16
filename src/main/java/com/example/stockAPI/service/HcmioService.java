@@ -66,8 +66,8 @@ public class HcmioService {
         if (4 != request.getStock().length()) {
             return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 股票長度應為4");
         }
-        if (4 != request.getDocSeq().length()) {
-            return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 委託書號長度應為4");
+        if (5 != request.getDocSeq().length()) {
+            return new UnrealProfitResponse(null,"002" ,"參數檢核錯誤, 委託書號長度應為5");
         }
         if(10 > request.getPrice()){
             return new UnrealProfitResponse(null, "002", "參數檢核錯誤, 價錢不會小於10");
