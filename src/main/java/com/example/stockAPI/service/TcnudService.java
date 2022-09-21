@@ -48,23 +48,8 @@ public class TcnudService {
     @Autowired
     private CalService calService;
 
-//    public void getCurPrice(List<Mstmb> mstmbList, List<Tcnud> tcnudList){
-//        for(int i = 0; i < mstmbList.size(); i++){
-//            for(int j = 0; j < tcnudList.size(); j++){
-//                if(tcnudList.get(j).getStock().equals(mstmbList.get(i).getStock())){
-//                    tcnudList.get(j).setPrice(mstmbList.get(i).getCurPrice());
-//                }
-//            }
-//        }
-//    }
-
     public List<Tcnud> getAll() {
         List<Tcnud> response = tcnudRepository.findAll();
-//        List<Mstmb> mstmbList = mstmbRepository.findAll();
-//        getCurPrice(mstmbList,response);
-//        for(int i = 0; i < response.size(); i++){
-//            tcnudRepository.save(response.get(i));
-//        }
         return response;
     }
 
@@ -230,14 +215,11 @@ public class TcnudService {
         for (Tcnud tcnud : tcnudList) {
             if (null != mstmbRepository.getDataByStock((tcnud.getStock()))) {
                 UnrealProfit unrealProfit = new UnrealProfit();
-                Mstmb mstmb = mstmbRepository.getDataByStock(tcnud.getStock());
                 unrealProfit.setTradeDate(tcnud.getTradeDate());
                 unrealProfit.setDocSeq(tcnud.getDocSeq());
                 unrealProfit.setStock(tcnud.getStock());
                 unrealProfit.setStockName(calService.getStock(stock).getShortName());
                 unrealProfit.setBuyPrice(tcnud.getPrice());
-//                unrealProfit.setNowPrice(mstmb.getCurPrice());
-//                unrealProfit.setNowPrice(Double.parseDouble(getDealPrice(stock)));
                 unrealProfit.setNowPrice(Double.parseDouble(calService.getStock(stock).getDealPrice()));
                 unrealProfit.setQty(tcnud.getQty());
                 unrealProfit.setRemainQty(tcnud.getRemainQty());
@@ -251,14 +233,6 @@ public class TcnudService {
         }
 
         return unrealProfitList;
-    }
-
-    public String getDealPrice(String Stock){
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://systexdemo.ddns.net:443/Quote/Stock.jsp?stock=";
-        Symbols result = restTemplate.getForObject(url + Stock, Symbols.class);
-        return result.getSymbolList().get(0).getDealPrice();
-
     }
 
 }

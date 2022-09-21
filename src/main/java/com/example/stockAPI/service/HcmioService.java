@@ -94,11 +94,11 @@ public class HcmioService {
             hcmio.setBsType("B");
             hcmio.setPrice(request.getPrice());
             hcmio.setQty(request.getQty());
-            hcmio.setAmt(hcmio.getAmt(request.getQty(), request.getPrice()));
-            hcmio.setFee(hcmio.getFee(hcmio.getAmt()));
-            hcmio.setTax(hcmio.getTax(hcmio.getAmt(), hcmio.getBsType()));
+            hcmio.setAmt(request.getQty() * request.getPrice());
+            hcmio.setFee(calService.getFee(hcmio.getAmt()));
+            hcmio.setTax(calService.getTax(hcmio.getAmt(), hcmio.getBsType()));
             hcmio.setStinTax(hcmio.getStinTax());
-            hcmio.setNetAmt(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()));
+            hcmio.setNetAmt(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType()));
             hcmio.setModDate(date.format(LocalDate.now()));
             hcmio.setModTime(time.format(LocalTime.now()));
             hcmio.setModUser(hcmio.getModUser());
@@ -118,15 +118,14 @@ public class HcmioService {
             newTcnud.setPrice(request.getPrice());
             newTcnud.setQty(request.getQty());
             newTcnud.setRemainQty(request.getQty());
-            newTcnud.setFee(hcmio.getFee(hcmio.getAmt()));
-            newTcnud.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+            newTcnud.setFee(calService.getFee(hcmio.getAmt()));
+            newTcnud.setCost(Math.abs(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType())));
             newTcnud.setModDate(date.format(LocalDate.now()));
             newTcnud.setModTime(time.format(LocalTime.now()));
             newTcnud.setModUser(newTcnud.getModUser());
             tcnudRepository.save(newTcnud);
 
             /////////UnrealProfit////////////
-//        UnrealProfitResponse unrealProfitResponse = new UnrealProfitResponse();
             List<UnrealProfit> unrealProfitList = new ArrayList<>();
             UnrealProfit unrealProfit = new UnrealProfit();
 
@@ -137,22 +136,21 @@ public class HcmioService {
             unrealProfit.setStock(request.getStock());
             unrealProfit.setStockName(calService.getStock(request.getStock()).getShortName());
             unrealProfit.setBuyPrice(request.getPrice());
-//            unrealProfit.setNowPrice(mstmbRepository.findCurPriceByStock(request.getStock()));
             unrealProfit.setNowPrice(Double.parseDouble(calService.getStock(request.getStock()).getDealPrice()));
 
             unrealProfit.setQty(request.getQty());
             unrealProfit.setRemainQty(request.getQty());
-            unrealProfit.setFee(hcmio.getFee(hcmio.getAmt()));
-            unrealProfit.setCost(Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())));
+            unrealProfit.setFee(calService.getFee(hcmio.getAmt()));
+            unrealProfit.setCost(Precision.round(Math.abs(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType())),2));
             unrealProfit.setMarketValue(Precision.round(request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock()),2));
 
             unrealProfit.setUnrealProfit(
-                  Precision.round(  request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
-                          - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())),2));
+                  Precision.round(  request.getQty() * Double.parseDouble(calService.getStock(request.getStock()).getDealPrice())
+                          - Math.abs(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType())),2));
 
-            unrealProfit.setGainInterest(String.format("%.2f", (request.getQty() * mstmbRepository.findCurPriceByStock(request.getStock())
-                    - Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax())))
-                    / Math.abs(hcmio.getNetAmt(hcmio.getAmt(), hcmio.getBsType(), hcmio.getFee(), hcmio.getTax()))*100) + "%");
+            unrealProfit.setGainInterest(String.format("%.2f", (request.getQty() * Double.parseDouble(calService.getStock(request.getStock()).getDealPrice())
+                    - Math.abs(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType())))
+                    / Math.abs(calService.getNetAmt(hcmio.getAmt(), hcmio.getBsType()))*100) + "%");
 
             unrealProfitList.add(unrealProfit);
 
