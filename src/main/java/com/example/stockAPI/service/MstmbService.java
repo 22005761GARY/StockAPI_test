@@ -18,6 +18,8 @@ public class MstmbService {
 
     @Autowired
     private MstmbRepository mstmbRepository;
+    @Autowired
+    private CalService calService;
 
     public List<Mstmb> getAllStock(){
         return mstmbRepository.findAll();
@@ -45,14 +47,16 @@ public class MstmbService {
     public StockInfoResponse updateCurPrice(MstmbRequest request){
         StockInfoResponse stockInfoResponse = new StockInfoResponse();
         Mstmb updateMstmb = mstmbRepository.getDataByStock(request.getStock());
-        Random r = new Random();
-        double max = updateMstmb.getCurPrice()*1.1;
-        double min = updateMstmb.getCurPrice()*0.9;
+//        Random r = new Random();
+//        double max = updateMstmb.getCurPrice()*1.1;
+//        double min = updateMstmb.getCurPrice()*0.9;
 //        updateMstmb.setCurPrice(Precision.round(r.nextInt((int) (max + 1 - min)) + min,2));
-        updateMstmb.setCurPrice(Precision.round(min + (max - min) * r.nextDouble(), 2));
+//        updateMstmb.setCurPrice(Precision.round(min + (max - min) * r.nextDouble(), 2));
+        updateMstmb.setCurPrice(Double.parseDouble(calService.getStock(request.getStock()).getDealPrice()));
         mstmbRepository.save(updateMstmb);
         stockInfoResponse.setMstmb(updateMstmb);
         stockInfoResponse.setStatus("Update Complete!");
         return stockInfoResponse;
     }
+
 }

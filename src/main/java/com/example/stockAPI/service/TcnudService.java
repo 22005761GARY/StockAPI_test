@@ -8,14 +8,25 @@ import com.example.stockAPI.controller.dto.response.UnrealProfitResponse;
 import com.example.stockAPI.model.HolidayRepository;
 import com.example.stockAPI.model.MstmbRepository;
 import com.example.stockAPI.model.TcnudRepository;
-import com.example.stockAPI.model.entity.Mstmb;
-import com.example.stockAPI.model.entity.SumUnrealProfit;
-import com.example.stockAPI.model.entity.Tcnud;
-import com.example.stockAPI.model.entity.UnrealProfit;
+import com.example.stockAPI.model.entity.*;
 import org.apache.commons.math3.util.Precision;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.print.attribute.standard.Media;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -33,6 +44,9 @@ public class TcnudService {
     private HolidayRepository holidayRepository;
     @Autowired
     private CheckService CheckService;
+
+    @Autowired
+    private CalService calService;
 
 //    public void getCurPrice(List<Mstmb> mstmbList, List<Tcnud> tcnudList){
 //        for(int i = 0; i < mstmbList.size(); i++){
@@ -220,21 +234,31 @@ public class TcnudService {
                 unrealProfit.setTradeDate(tcnud.getTradeDate());
                 unrealProfit.setDocSeq(tcnud.getDocSeq());
                 unrealProfit.setStock(tcnud.getStock());
-                unrealProfit.setStockName(mstmb.getStockName());
+                unrealProfit.setStockName(calService.getStock(stock).getShortName());
                 unrealProfit.setBuyPrice(tcnud.getPrice());
-                unrealProfit.setNowPrice(mstmb.getCurPrice());
+//                unrealProfit.setNowPrice(mstmb.getCurPrice());
+//                unrealProfit.setNowPrice(Double.parseDouble(getDealPrice(stock)));
+                unrealProfit.setNowPrice(Double.parseDouble(calService.getStock(stock).getDealPrice()));
                 unrealProfit.setQty(tcnud.getQty());
                 unrealProfit.setRemainQty(tcnud.getRemainQty());
                 unrealProfit.setFee(tcnud.getFee());
                 unrealProfit.setCost(tcnud.getCost());
-                unrealProfit.setMarketValue(tcnud.getRemainQty() * mstmb.getCurPrice());
-                unrealProfit.setUnrealProfit(tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost());
-                unrealProfit.setGainInterest((Precision.round((tcnud.getRemainQty() * mstmb.getCurPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
+                unrealProfit.setMarketValue(tcnud.getRemainQty() * unrealProfit.getNowPrice());
+                unrealProfit.setUnrealProfit(tcnud.getRemainQty() * unrealProfit.getNowPrice() - tcnud.getCost());
+                unrealProfit.setGainInterest((Precision.round((tcnud.getRemainQty() * unrealProfit.getNowPrice() - tcnud.getCost()) / tcnud.getCost() * 100, 2)) + "%");
                 unrealProfitList.add(unrealProfit);
             }
         }
 
         return unrealProfitList;
+    }
+
+    public String getDealPrice(String Stock){
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://systexdemo.ddns.net:443/Quote/Stock.jsp?stock=";
+        Symbols result = restTemplate.getForObject(url + Stock, Symbols.class);
+        return result.getSymbolList().get(0).getDealPrice();
+
     }
 
 }

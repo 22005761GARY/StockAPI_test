@@ -41,6 +41,8 @@ public class HcmioService {
     @Autowired
     private TcnudService tcnudService;
 
+    @Autowired CalService calService;
+
     public List<Hcmio> getAllData() {
         List<Hcmio> response = hcmioRepository.findAll();
         return response;
@@ -133,9 +135,11 @@ public class HcmioService {
 //        unrealProfit.setDocSeq(hcmioRepository.findLastDocSeqByTradeDate(date.format(LocalDate.now())));
             unrealProfit.setDocSeq(request.getDocSeq());
             unrealProfit.setStock(request.getStock());
-            unrealProfit.setStockName(mstmbRepository.findStockNameByStock(request.getStock()));
+            unrealProfit.setStockName(calService.getStock(request.getStock()).getShortName());
             unrealProfit.setBuyPrice(request.getPrice());
-            unrealProfit.setNowPrice(mstmbRepository.findCurPriceByStock(request.getStock()));
+//            unrealProfit.setNowPrice(mstmbRepository.findCurPriceByStock(request.getStock()));
+            unrealProfit.setNowPrice(Double.parseDouble(calService.getStock(request.getStock()).getDealPrice()));
+
             unrealProfit.setQty(request.getQty());
             unrealProfit.setRemainQty(request.getQty());
             unrealProfit.setFee(hcmio.getFee(hcmio.getAmt()));
